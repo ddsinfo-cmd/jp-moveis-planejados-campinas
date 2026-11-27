@@ -314,12 +314,12 @@
     <div class="sec-head">
       <span class="kicker">Orçamento rápido</span>
       <h2>Monte seu pedido em 30 segundos</h2>
-      <p>Escolha o ambiente e os detalhes. No final, a mensagem chega prontinha no WhatsApp da JP — é só enviar.</p>
+      <p>Escolha os ambientes e os detalhes — pode marcar vários. No final, a mensagem chega prontinha no WhatsApp da JP — é só enviar.</p>
     </div>
     <div class="sim">
       <div class="sim-card">
         <div class="field">
-          <span class="lab" id="lab-amb">1 · Qual ambiente você quer planejar?</span>
+          <span class="lab" id="lab-amb">1 · Quais ambientes você quer planejar? <span style="color:var(--ink2);font-weight:600">(pode marcar vários)</span></span>
           <div class="chips" role="group" aria-labelledby="lab-amb" id="amb-chips">
             <button type="button" class="chip" data-val="Cozinha" aria-pressed="true">Cozinha</button>
             <button type="button" class="chip" data-val="Quarto / Guarda-roupa" aria-pressed="false">Quarto / Guarda-roupa</button>
@@ -328,11 +328,11 @@
             <button type="button" class="chip" data-val="Banheiro" aria-pressed="false">Banheiro</button>
             <button type="button" class="chip" data-val="Escritório / Home office" aria-pressed="false">Escritório</button>
             <button type="button" class="chip" data-val="Área gourmet" aria-pressed="false">Área gourmet</button>
-            <button type="button" class="chip" data-val="Casa toda / Vários ambientes" aria-pressed="false">Vários ambientes</button>
+            <button type="button" class="chip" data-val="Lavanderia" aria-pressed="false">Lavanderia</button>
           </div>
         </div>
         <div class="field">
-          <label for="metragem">2 · Tamanho aproximado do ambiente: <output id="met-out">12 m²</output></label>
+          <label for="metragem">2 · Tamanho total aproximado: <output id="met-out">12 m²</output></label>
           <input type="range" id="metragem" min="3" max="60" value="12" step="1" />
         </div>
         <div class="field">
@@ -504,7 +504,7 @@ var IMGS={"hero":"data:image/webp;base64,UklGRpD+AABXRUJQVlA4IIT+AABwfwSdASpgBOs
   } catch (e) { showStaticMap(); }
 
   var WA = '5519996506976';
-  var state = { amb: 'Cozinha', extras: [] };
+  var state = { ambs: ['Cozinha'], extras: [] };
   var met = document.getElementById('metragem');
   var metOut = document.getElementById('met-out');
   var cidade = document.getElementById('cidade');
@@ -515,7 +515,9 @@ var IMGS={"hero":"data:image/webp;base64,UklGRpD+AABXRUJQVlA4IIT+AABwfwSdASpgBOs
     var lines = [];
     lines.push('Olá, JP! Quero um orçamento de móveis planejados.');
     lines.push('');
-    lines.push('• Ambiente: ' + state.amb);
+    if (state.ambs.length === 1) lines.push('• Ambiente: ' + state.ambs[0]);
+    else if (state.ambs.length > 1) lines.push('• Ambientes: ' + state.ambs.join(', '));
+    else lines.push('• Ambientes: ainda vou definir');
     lines.push('• Tamanho aproximado: ' + met.value + ' m²');
     lines.push('• Cidade: ' + cidade.value);
     if (state.extras.length) lines.push('• Quero incluir: ' + state.extras.join(', '));
@@ -529,24 +531,18 @@ var IMGS={"hero":"data:image/webp;base64,UklGRpD+AABXRUJQVlA4IIT+AABwfwSdASpgBOs
     preview.textContent = msg;
     send.href = 'https://wa.me/' + WA + '?text=' + encodeURIComponent(msg);
   }
-  function wireChips(id, single){
+  function wireChips(id, key){
     var box = document.getElementById(id);
     box.addEventListener('click', function(e){
       var btn = e.target.closest('.chip'); if(!btn) return;
-      if (single){
-        box.querySelectorAll('.chip').forEach(function(c){ c.setAttribute('aria-pressed','false'); });
-        btn.setAttribute('aria-pressed','true');
-        state.amb = btn.dataset.val;
-      } else {
-        var on = btn.getAttribute('aria-pressed') === 'true';
-        btn.setAttribute('aria-pressed', on ? 'false' : 'true');
-        state.extras = Array.prototype.map.call(box.querySelectorAll('.chip[aria-pressed="true"]'), function(c){ return c.dataset.val; });
-      }
+      var on = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', on ? 'false' : 'true');
+      state[key] = Array.prototype.map.call(box.querySelectorAll('.chip[aria-pressed="true"]'), function(c){ return c.dataset.val; });
       render();
     });
   }
-  wireChips('amb-chips', true);
-  wireChips('extras-chips', false);
+  wireChips('amb-chips', 'ambs');
+  wireChips('extras-chips', 'extras');
   met.addEventListener('input', render);
   cidade.addEventListener('change', render);
 
@@ -555,10 +551,9 @@ var IMGS={"hero":"data:image/webp;base64,UklGRpD+AABXRUJQVlA4IIT+AABwfwSdASpgBOs
     card.addEventListener('click', function(){
       var val = card.dataset.amb;
       document.querySelectorAll('#amb-chips .chip').forEach(function(c){
-        var on = c.dataset.val === val;
-        c.setAttribute('aria-pressed', on ? 'true' : 'false');
-        if (on) state.amb = val;
+        if (c.dataset.val === val) c.setAttribute('aria-pressed', 'true');
       });
+      state.ambs = Array.prototype.map.call(document.querySelectorAll('#amb-chips .chip[aria-pressed="true"]'), function(c){ return c.dataset.val; });
       render();
     });
   });
